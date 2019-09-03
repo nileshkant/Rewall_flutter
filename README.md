@@ -1,16 +1,21 @@
-# rewalls
+# Rewall - Work in Progress
 
-A new Flutter project.
+An Unsplash client built using Flutter. It is currently work in progress, the aim is to create a well structured application with Bloc Pattern using `[Provider]` Package offered by flutter team itself. 
 
-## Getting Started
+> Read More about [Provider Package](https://pub.dev/packages/provider).
 
-This project is a starting point for a Flutter application.
+##  Screens
+At the moment it only consists of a Home Screen and Image Detail Screen
 
-A few resources to get you started if this is your first Flutter project:
+ -  Home Screen is basically the list of top images provided by [Unsplash](https://unsplash.com):
+ - Image Detail Screen will show the details of select screen.
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+## Features
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+ - Image detail page using Provider (Bloc Pattern) to avoid multiple api calls.
+ - Using masonry layout to show list of images.
+
+## ScreenShots
+![enter image description here](https://i.ibb.co/z7fMj4g/Screenshot-2019-09-03-15-04-55-15-8c49b9f28341ae7d9e2492a9046621d0.png)
+ 
+![enter image description here](https://i.ibb.co/QQkRmcP/Screenshot-2019-09-03-15-05-13-66-8c49b9f28341ae7d9e2492a9046621d0.png)
