@@ -8,7 +8,7 @@ import '../keys.dart';
 class ApiCall {
 
   static Future<List<SingleImage>> loadImages({int page = 1, int perPage = 10}) async {
-    String url = 'https://api.unsplash.com/photos?page=$page&per_page=$perPage';
+    String url = 'https://api.unsplash.com/collections/1065976/photos?page=$page&per_page=$perPage';
     // receive image data from unsplash
     var data = await _getImageData(url);
     // generate UnsplashImage List from received data
@@ -16,11 +16,6 @@ class ApiCall {
         List<SingleImage>.generate(data.length, (index) {
       return SingleImage.fromJson(data[index]);
     });
-    // return images
-    // if (page == 1) {
-    //   return imageList = imageLists;
-    // } else if (page > 1) {
-    // List<SingleImage> newList = new List.from(_imageList)..addAll(imageLists);
     return imageLists;
   }
 
