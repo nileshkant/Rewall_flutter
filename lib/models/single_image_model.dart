@@ -178,9 +178,9 @@ class Links {
   String photos;
   String likes;
   String portfolio;
-  String download_location;
+  String download;
 
-  Links({this.self, this.html, this.photos, this.likes, this.portfolio, this.download_location});
+  Links({this.self, this.html, this.photos, this.likes, this.portfolio, this.download});
 
   Links.fromJson(Map<String, dynamic> json) {
     self = json['self'];
@@ -188,7 +188,7 @@ class Links {
     photos = json['photos'];
     likes = json['likes'];
     portfolio = json['portfolio'];
-    download_location = json['download_location'];
+    download = json['download'];
   }
 
   Map<String, dynamic> toJson() {
@@ -198,7 +198,7 @@ class Links {
     data['photos'] = this.photos;
     data['likes'] = this.likes;
     data['portfolio'] = this.portfolio;
-    data['download_location'] = this.download_location;
+    data['download'] = this.download;
     return data;
   }
 }

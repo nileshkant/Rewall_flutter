@@ -3,10 +3,14 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:rewalls/blocs/image_bloc.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:wallpaper/wallpaper.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../keys.dart';
 
 class FullImagePage extends StatefulWidget {
   @override
@@ -20,59 +24,47 @@ class _FullImagePageState extends State<FullImagePage> {
   bool isFirstLoad = true;
 
   Stream<String> progressString;
-  double res;
+  double res = 0;
   bool downloading = false;
   var result = "Waiting to set wallpaper";
 
   @override
   void initState() {
     super.initState();
-
   }
 
-  Future _setWallpaper(url, type) async {
-    progressString = Wallpaper.ImageDownloadProgress(url);
-    progressString.listen((data) {
-      setState(() {
-        res = double.parse(data.replaceAll(RegExp('%'), ''));
-        downloading = true;
-      });
-      print("DataReceived: " + data);
-    }, onDone: () async {
-      String wallpaperType = await Wallpaper.homeScreen();
-      if (type == 'home') {
-        wallpaperType = await Wallpaper.homeScreen();
-      } else if (type == 'lock') {
-        wallpaperType = await Wallpaper.lockScreen();
-      } else {
-        wallpaperType = await Wallpaper.bothScreen();
-      }
-      setState(() {
-        downloading = false;
-        type = wallpaperType;
-      });
-      print("Task Done");
-    }, onError: (error) {
-      setState(() {
-        downloading = false;
-      });
-      print("Some Error");
+  _toastMsg(msg) {
+    Fluttertoast.showToast(
+        msg: msg,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIos: 3,
+        backgroundColor: Colors.black87,
+        textColor: Colors.white,
+        fontSize: 16.0);
+  }
+
+  void _panelOpen() {
+    setState(() {
+      panelState = true;
     });
   }
 
-  void _panelOpen () {
-    setState(() {
-          panelState = true;
-        });
-  }
-  void _panelClosed () {
+  void _panelClosed() {
     if (isFirstLoad == true) {
       isFirstLoad = false;
       return;
     }
     setState(() {
-          panelState = false;
-        });
+      panelState = false;
+    });
+  }
+
+  _launchURL(urlLink) async {
+    String url = urlLink;
+    if (await canLaunch(url)) {
+      await launch(url);
+    }
   }
 
   BorderRadiusGeometry radius = BorderRadius.only(
@@ -80,16 +72,14 @@ class _FullImagePageState extends State<FullImagePage> {
     topRight: Radius.circular(24.0),
   );
 
-  final snackBar = SnackBar(
-    content: Text('Yay! A SnackBar!'),
-  );
   @override
   Widget build(BuildContext context) {
     final ImageBloc imageBloc = Provider.of<ImageBloc>(context);
+    if (imageBloc.imageSingle == null) Navigator.of(context).pop();
     return Scaffold(
       body: SlidingUpPanel(
-        onPanelOpened:_panelOpen,
-        onPanelClosed:_panelClosed,
+        onPanelOpened: _panelOpen,
+        onPanelClosed: _panelClosed,
         minHeight: 80,
         panel: Container(
             decoration: BoxDecoration(
@@ -105,17 +95,63 @@ class _FullImagePageState extends State<FullImagePage> {
                         : Icons.keyboard_arrow_down),
                   ),
                 ),
-                Row(
+                Column(
                   children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0, vertical: 0.0),
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(
-                            imageBloc.imageSingle.user.profileImage.medium),
-                      ),
+                    Row(
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0, vertical: 0.0),
+                          child: CircleAvatar(
+                            backgroundImage: NetworkImage(
+                                imageBloc.imageSingle.user.profileImage.medium),
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            InkWell(
+                                child: Container(
+                                    padding: EdgeInsets.fromLTRB(0, 0, 0, 8),
+                                    child:
+                                        Text(imageBloc.imageSingle.user.name)),
+                                onTap: () {
+                                  _launchURL(
+                                      imageBloc.imageSingle.user.links.html);
+                                }),
+                            InkWell(
+                                child: Text('Unsplash'),
+                                onTap: () {
+                                  _launchURL('https://unsplash.com');
+                                }),
+                          ],
+                        )
+                      ],
                     ),
-                    Text(imageBloc.imageSingle.user.name)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(10, 20, 0, 10),
+                      child: Row(
+                        children: <Widget>[
+                          imageBloc.imageSingle.user.bio != null ? Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 10.0),
+                                  child: Text(
+                                    'Bio',
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Text(imageBloc.imageSingle.user.bio)
+                              ],
+                            ),
+                          ) : Text('')
+                        ],
+                      ),
+                    )
                   ],
                 ),
               ],
@@ -145,9 +181,9 @@ class _FullImagePageState extends State<FullImagePage> {
                   ),
                   Center(
                     child: Hero(
-                        tag: imageBloc.imageSingle.id,
-                        child: CachedNetworkImage(
-                      imageBuilder: (context, imageProvider) =>  Container(
+                      tag: imageBloc.imageSingle.id,
+                      child: CachedNetworkImage(
+                        imageBuilder: (context, imageProvider) => Container(
                           decoration: BoxDecoration(
                             image: DecorationImage(
                               image: imageProvider,
@@ -155,11 +191,12 @@ class _FullImagePageState extends State<FullImagePage> {
                             ),
                           ),
                         ),
-                      placeholder: (context, url) =>
-                          CircularProgressIndicator(),
-                      imageUrl: imageBloc.imageSingle.urls.regular,
+                        placeholder: (context, url) =>
+                            CircularProgressIndicator(),
+                        imageUrl: imageBloc.imageSingle.urls.regular,
+                      ),
                     ),
-                  ),),
+                  ),
                 ],
               ),
             ),
@@ -188,7 +225,6 @@ class _FullImagePageState extends State<FullImagePage> {
                     ),
                   ],
                 ),
-                title:  Container(child: downloading && res < 100 ?  LinearProgressIndicator() : Text('')),
               ),
             ),
           ],
@@ -196,28 +232,13 @@ class _FullImagePageState extends State<FullImagePage> {
         borderRadius: radius,
       ),
       floatingActionButton: SpeedDial(
-        // // both default to 16
-        // marginRight: 18,
-        // marginBottom: 40,
         animatedIcon: AnimatedIcons.list_view,
-        // animatedIconTheme: IconThemeData(size: 22.0),
-        // // this is ignored if animatedIcon is non null
-        // // child: Icon(Icons.add),
-        // visible: _dialVisible,
-        // // If true user is forced to close dial manually
-        // // by tapping main button and overlay is not rendered.
-        // closeManually: false,
         curve: Curves.ease,
-        // overlayColor: Colors.black,
         overlayOpacity: 0.3,
-        // onOpen: () => print('OPENING DIAL'),
-        // onClose: () => print('DIAL CLOSED'),
         tooltip: 'Speed Dial',
-        // heroTag: 'speed-dial-hero-tag',
         backgroundColor: Colors.black87,
         foregroundColor: Colors.white,
-        // elevation: 8.0,
-        // shape: CircleBorder(),
+        elevation: 16.0,
         children: [
           SpeedDialChild(
               child: Icon(Icons.stay_primary_portrait),
@@ -225,11 +246,30 @@ class _FullImagePageState extends State<FullImagePage> {
               foregroundColor: Colors.white,
               label: 'Both',
               labelBackgroundColor: Colors.black87,
-              onTap: () async {
-                await _setWallpaper(imageBloc.imageSingle.urls.regular, 'both');
-                if (res == 100) {
-                  Scaffold.of(context).showSnackBar(snackBar);
-                }
+              onTap: () {
+                _toastMsg('Downloading...');
+                progressString = Wallpaper.ImageDownloadProgress(
+                    '${imageBloc.imageSingle.links.download}?client_id=${Keys.UNSPLASH_API_CLIENT_ID}');
+                progressString.listen((data) {
+                  setState(() {
+                    res = double.parse(data.replaceAll(RegExp('%'), ''));
+                    downloading = true;
+                  });
+                  print("DataReceived: " + data);
+                }, onDone: () async {
+                  both = await Wallpaper.homeScreen();
+                  _toastMsg('Wallpaper set successfully');
+                  setState(() {
+                    downloading = false;
+                    both = both;
+                  });
+                  print("Task Done");
+                }, onError: (error) {
+                  setState(() {
+                    downloading = false;
+                  });
+                  print("Some Error");
+                });
               }),
           SpeedDialChild(
               child: Icon(Icons.screen_lock_portrait),
@@ -237,8 +277,30 @@ class _FullImagePageState extends State<FullImagePage> {
               foregroundColor: Colors.white,
               labelBackgroundColor: Colors.black87,
               label: 'Lock Screen',
-              onTap: () async {
-                await _setWallpaper(imageBloc.imageSingle.urls.regular, 'lock');
+              onTap: () {
+                _toastMsg('Downloading...');
+                progressString = Wallpaper.ImageDownloadProgress(
+                    '${imageBloc.imageSingle.links.download}?client_id=${Keys.UNSPLASH_API_CLIENT_ID}');
+                progressString.listen((data) {
+                  setState(() {
+                    res = double.parse(data.replaceAll(RegExp('%'), ''));
+                    downloading = true;
+                  });
+                  print("DataReceived: " + data);
+                }, onDone: () async {
+                  lock = await Wallpaper.homeScreen();
+                  _toastMsg('Lockscreen wallpaper set successfully');
+                  setState(() {
+                    downloading = false;
+                    lock = lock;
+                  });
+                  print("Task Done");
+                }, onError: (error) {
+                  setState(() {
+                    downloading = false;
+                  });
+                  print("Some Error");
+                });
               }),
           SpeedDialChild(
               child: Icon(Icons.add_to_home_screen),
@@ -246,8 +308,30 @@ class _FullImagePageState extends State<FullImagePage> {
               backgroundColor: Colors.black87,
               foregroundColor: Colors.white,
               labelBackgroundColor: Colors.black87,
-              onTap: () async {
-               await _setWallpaper(imageBloc.imageSingle.urls.regular, 'home');
+              onTap: () {
+                _toastMsg('Downloading...');
+                progressString = Wallpaper.ImageDownloadProgress(
+                    '${imageBloc.imageSingle.links.download}?client_id=${Keys.UNSPLASH_API_CLIENT_ID}');
+                progressString.listen((data) {
+                  setState(() {
+                    res = double.parse(data.replaceAll(RegExp('%'), ''));
+                    downloading = true;
+                  });
+                  print("DataReceived: " + data);
+                }, onDone: () async {
+                  home = await Wallpaper.homeScreen();
+                  _toastMsg('Homescreen wallpaper set successfully');
+                  setState(() {
+                    downloading = false;
+                    home = home;
+                  });
+                  print("Task Done");
+                }, onError: (error) {
+                  setState(() {
+                    downloading = false;
+                  });
+                  print("Some Error");
+                });
               }),
         ],
       ),
